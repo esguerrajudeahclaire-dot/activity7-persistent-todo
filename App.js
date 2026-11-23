@@ -79,6 +79,19 @@ export default function App() {
     setEditId(null);
   };
 
+  const deleteTask = (id) => {
+    const updatedTasks = tasks.filter(
+      (item) => item.id !== id
+    );
+
+    saveTasks(updatedTasks);
+
+    if (editId === id) {
+      setTask('');
+      setEditId(null);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My To-Do List</Text>
@@ -120,12 +133,21 @@ export default function App() {
           <View style={styles.taskItem}>
             <Text style={styles.taskText}>{item.title}</Text>
 
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => editTask(item)}
-            >
-              <Text style={styles.buttonText}>Edit</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => editTask(item)}
+              >
+                <Text style={styles.buttonText}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => deleteTask(item.id)}
+              >
+                <Text style={styles.buttonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         ListEmptyComponent={
@@ -186,11 +208,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   editButton: {
     backgroundColor: '#82977A',
     padding: 10,
     borderRadius: 6,
-    alignSelf: 'flex-start',
+  },
+  deleteButton: {
+    backgroundColor: '#C65B5B',
+    padding: 10,
+    borderRadius: 6,
   },
   cancelText: {
     color: '#777',
