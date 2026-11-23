@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,40 @@ import {
   StyleSheet
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function App() {
   const [task, setTask] = useState('');
   const [tasks, setTasks] = useState([]);
+  const [editId, setEditId] = useState(null);
+
+  const saveTasks = async (newTasks) => {
+    try {
+      await AsyncStorage.setItem(
+        'myTasks',
+        JSON.stringify(newTasks)
+      );
+      setTasks(newTasks);
+    } catch (error) {
+      console.log('Error saving tasks:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const savedTasks = await AsyncStorage.getItem('myTasks');
+
+        if (savedTasks !== null) {
+          setTasks(JSON.parse(savedTasks));
+        }
+      } catch (error) {
+        console.log('Error loading tasks:', error);
+      }
+    };
+
+    loadTasks();
+  }, []);
 
   const addTask = () => {
     if (task.trim() === '') {
@@ -20,11 +51,32 @@ export default function App() {
 
     const newTask = {
       id: Date.now().toString(),
-      title: task
+      title: task.trim()
     };
 
-    setTasks([...tasks, newTask]);
+    saveTasks([...tasks, newTask]);
     setTask('');
+  };
+
+  const editTask = (item) => {
+    setTask(item.title);
+    setEditId(item.id);
+  };
+
+  const updateTask = () => {
+    if (task.trim() === '') {
+      return;
+    }
+
+    const updatedTasks = tasks.map((item) =>
+      item.id === editId
+        ? { ...item, title: task.trim() }
+        : item
+    );
+
+    saveTasks(updatedTasks);
+    setTask('');
+    setEditId(null);
   };
 
   return (
@@ -42,11 +94,24 @@ export default function App() {
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={addTask}
+          onPress={editId ? updateTask : addTask}
         >
-          <Text style={styles.buttonText}>Add</Text>
+          <Text style={styles.buttonText}>
+            {editId ? 'Update' : 'Add'}
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {editId !== null && (
+        <TouchableOpacity
+          onPress={() => {
+            setTask('');
+            setEditId(null);
+          }}
+        >
+          <Text style={styles.cancelText}>Cancel Edit</Text>
+        </TouchableOpacity>
+      )}
 
       <FlatList
         data={tasks}
@@ -54,6 +119,13 @@ export default function App() {
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
             <Text style={styles.taskText}>{item.title}</Text>
+
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => editTask(item)}
+            >
+              <Text style={styles.buttonText}>Edit</Text>
+            </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={
@@ -112,6 +184,17 @@ const styles = StyleSheet.create({
   },
   taskText: {
     fontSize: 16,
+    marginBottom: 10,
+  },
+  editButton: {
+    backgroundColor: '#82977A',
+    padding: 10,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  cancelText: {
+    color: '#777',
+    marginBottom: 15,
   },
   emptyText: {
     textAlign: 'center',
